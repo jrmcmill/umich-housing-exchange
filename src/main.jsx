@@ -166,7 +166,7 @@ function ListingCard({ listing, index, onNavigate }) {
   );
 }
 
-function AuthCard({ authEmail, setAuthEmail, authMessage, authLoading, onSendMagicLink }) {
+function AuthCard({ authEmail, setAuthEmail, authCode, setAuthCode, authMessage, authLoading, codeSent, onSendCode, onVerifyCode }) {
   return (
     <section className="surface auth-panel">
       <div className="section-heading">
@@ -174,10 +174,10 @@ function AuthCard({ authEmail, setAuthEmail, authMessage, authLoading, onSendMag
           <p className="eyebrow">Account required</p>
           <h2>Sign in to create a listing</h2>
         </div>
-        <p>Magic-link auth, no password storage in the client</p>
+        <p>Enter the six-digit code Supabase emails to you</p>
       </div>
       <div className="auth-grid">
-        <form className="submit-form" onSubmit={onSendMagicLink}>
+        <form className="submit-form" onSubmit={codeSent ? onVerifyCode : onSendCode}>
           <label>
             Email address
             <input
@@ -189,10 +189,32 @@ function AuthCard({ authEmail, setAuthEmail, authMessage, authLoading, onSendMag
               onChange={(event) => setAuthEmail(event.target.value)}
             />
           </label>
+          {codeSent ? (
+            <label>
+              Verification code
+              <input
+                type="text"
+                name="code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
+                maxLength={6}
+                required
+                placeholder="123456"
+                value={authCode}
+                onChange={(event) => setAuthCode(event.target.value)}
+              />
+            </label>
+          ) : null}
           <div className="submit-form__actions">
             <button className="button button--primary" type="submit" disabled={authLoading}>
-              {authLoading ? 'Sending link...' : 'Send sign-in link'}
+              {authLoading ? (codeSent ? 'Verifying code...' : 'Sending code...') : codeSent ? 'Verify code' : 'Send verification code'}
             </button>
+            {codeSent ? (
+              <button className="button button--secondary" type="button" onClick={onSendCode} disabled={authLoading}>
+                Resend code
+              </button>
+            ) : null}
           </div>
         </form>
         <aside className="submit-side__panel submit-side__panel--accent">
@@ -201,7 +223,7 @@ function AuthCard({ authEmail, setAuthEmail, authMessage, authLoading, onSendMag
             <li>Only @umich.edu accounts can request publishing access.</li>
             <li>Use the Supabase anon key only in the browser.</li>
             <li>Row-level security limits writes to authenticated owners.</li>
-            <li>Shareable listing routes stay public, but publishing still requires sign-in.</li>
+            <li>Shareable listing routes stay public, but publishing still requires the emailed code.</li>
           </ul>
         </aside>
       </div>
@@ -220,8 +242,10 @@ function App() {
   const [filters, setFilters] = useState(defaultFilters);
   const [flash, setFlash] = useState(null);
   const [authEmail, setAuthEmail] = useState('');
+  const [authCode, setAuthCode] = useState('');
   const [authMessage, setAuthMessage] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
   const flashTimerRef = useRef(null);
 
   const listings = useMemo(() => mergeListings(feedListings, ownListings), [feedListings, ownListings]);
@@ -463,7 +487,7 @@ function App() {
     );
   }
 
-  async function sendMagicLink(event) {
+  async function sendCode(event) {
     event.preventDefault();
 
     if (!databaseConfigured || !supabase) {
@@ -487,15 +511,55 @@ function App() {
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}${toAppPath('submit')}`,
+        shouldCreateUser: false,
       },
     });
 
     if (error) {
       setAuthMessage(error.message);
     } else {
-      setAuthMessage('Sign-in link sent. Check your inbox and come back here to publish.');
-      setFlash({ type: 'success', message: 'Sign-in link sent.' });
+      setCodeSent(true);
+      setAuthCode('');
+      setAuthMessage('Verification code sent. Check your inbox and enter the six-digit code here.');
+      setFlash({ type: 'success', message: 'Verification code sent.' });
+    }
+
+    setAuthLoading(false);
+  }
+
+  async function verifyCode(event) {
+    event.preventDefault();
+
+    if (!databaseConfigured || !supabase) {
+      setFlash({ type: 'error', message: 'Connect Supabase to enable accounts and submissions.' });
+      return;
+    }
+
+    if (!authEmail.trim() || !isUmichEmail(authEmail)) {
+      setAuthMessage('Enter a valid @umich.edu email address first.');
+      return;
+    }
+
+    const code = authCode.trim();
+    if (!code) {
+      setAuthMessage('Enter the six-digit verification code.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMessage('');
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: authEmail.trim(),
+      token: code,
+      type: 'email',
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+    } else {
+      setAuthMessage('Email verified. You are now signed in.');
+      setFlash({ type: 'success', message: 'Email verified.' });
     }
 
     setAuthLoading(false);
@@ -940,9 +1004,13 @@ function App() {
           <AuthCard
             authEmail={authEmail}
             setAuthEmail={setAuthEmail}
+            authCode={authCode}
+            setAuthCode={setAuthCode}
             authMessage={authMessage}
             authLoading={authLoading}
-            onSendMagicLink={sendMagicLink}
+            codeSent={codeSent}
+            onSendCode={sendCode}
+            onVerifyCode={verifyCode}
           />
         ) : (
           <div className="submit-layout">
