@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UMich Subleases</title>
+    <script>
+      (function () {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        const root = parts.length ? `/${parts[0]}/` : '/';
+        window.sessionStorage.setItem('umich-subleases:route', window.location.pathname + window.location.search + window.location.hash);
+        window.location.replace(root);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
