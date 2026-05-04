@@ -1156,21 +1156,27 @@ function App() {
                 {contactEmailHref ? (
                   hasContactPhone && currentUser ? (
                     <div className="contact-menu">
-                      <button className="button button--primary" type="button" onClick={() => setContactOpen((open) => !open)}>
+                      <button
+                        className="button button--primary"
+                        type="button"
+                        aria-expanded={contactOpen}
+                        aria-controls="contact-panel"
+                        onClick={() => setContactOpen((open) => !open)}
+                      >
                         Contact owner
                       </button>
                       {contactOpen ? (
-                        <div className="contact-menu__panel">
+                        <div className="contact-menu__panel" id="contact-panel">
                           <div className="contact-menu__switcher">
                             <button
-                              className={`button ${contactView === 'email' ? 'button--primary' : 'button--ghost'}`}
+                              className={`contact-menu__tab ${contactView === 'email' ? 'contact-menu__tab--active' : ''}`}
                               type="button"
                               onClick={() => setContactView('email')}
                             >
                               Email
                             </button>
                             <button
-                              className={`button ${contactView === 'phone' ? 'button--primary' : 'button--ghost'}`}
+                              className={`contact-menu__tab ${contactView === 'phone' ? 'contact-menu__tab--active' : ''}`}
                               type="button"
                               onClick={() => setContactView('phone')}
                             >
@@ -1179,6 +1185,7 @@ function App() {
                           </div>
                           {contactView === 'phone' ? (
                             <div className="contact-menu__details">
+                              <label className="contact-menu__label">Phone number</label>
                               <strong>{contactPhone}</strong>
                               <span>Phone is shown only to signed-in users.</span>
                               <a className="button button--secondary" href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`} target="_blank" rel="noreferrer">
@@ -1186,9 +1193,14 @@ function App() {
                               </a>
                             </div>
                           ) : (
-                            <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
-                              Email {contactEmail}
-                            </a>
+                            <div className="contact-menu__details">
+                              <label className="contact-menu__label">UMich email</label>
+                              <strong>{contactEmail}</strong>
+                              <span>Email opens a prefilled message to the listing owner.</span>
+                              <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
+                                Email owner
+                              </a>
+                            </div>
                           )}
                         </div>
                       ) : null}

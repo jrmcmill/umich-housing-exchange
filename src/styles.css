@@ -159,8 +159,9 @@ button {
 }
 
 .contact-menu {
-  display: grid;
-  gap: 10px;
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
 }
 
 .contact-menu--inline {
@@ -168,6 +169,11 @@ button {
 }
 
 .contact-menu__panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: min(360px, calc(100vw - 48px));
+  min-height: 188px;
   display: grid;
   gap: 12px;
   padding: 14px;
@@ -175,26 +181,64 @@ button {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(0, 39, 76, 0.12);
   box-shadow: 0 18px 36px rgba(0, 39, 76, 0.1);
+  z-index: 20;
 }
 
 .contact-menu__switcher {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(0, 39, 76, 0.06);
+}
+
+.contact-menu__tab {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.contact-menu__tab--active {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 39, 76, 0.16);
+  box-shadow: 0 8px 14px rgba(0, 39, 76, 0.08);
 }
 
 .contact-menu__details {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  align-content: start;
+  min-height: 110px;
   color: var(--blue);
+}
+
+.contact-menu__label {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 800;
+  color: var(--muted);
 }
 
 .contact-menu__details strong {
   font-size: 1.05rem;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .contact-menu__details span {
   color: var(--muted);
+}
+
+.contact-menu__details .button {
+  margin-top: 4px;
 }
 
 .surface {
@@ -1119,6 +1163,16 @@ h3 {
   .detail-hero__actions .button,
   .submit-form__actions .button {
     width: 100%;
+  }
+
+  .contact-menu {
+    width: 100%;
+  }
+
+  .contact-menu__panel {
+    position: static;
+    width: 100%;
+    min-height: 0;
   }
 
   .flash {
