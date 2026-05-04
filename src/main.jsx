@@ -185,10 +185,13 @@ function getListingPhone(listing) {
 }
 
 function buildMailtoHref(email, subject = '', body = '') {
-  const params = new URLSearchParams();
-  if (subject) params.set('subject', subject);
-  if (body) params.set('body', body);
-  return `mailto:${email}${params.toString() ? `?${params.toString()}` : ''}`;
+  // Use encodeURIComponent to avoid URLSearchParams encoding spaces as '+'
+  // which some mail clients display verbatim. encodeURIComponent produces
+  // %20 and preserves newlines as %0A which mail clients interpret as line breaks.
+  const parts = [];
+  if (subject) parts.push(`subject=${encodeURIComponent(subject)}`);
+  if (body) parts.push(`body=${encodeURIComponent(body)}`);
+  return `mailto:${email}${parts.length ? `?${parts.join('&')}` : ''}`;
 }
 
 function getContactHref(listing) {
@@ -211,8 +214,33 @@ function getMailtoLink(listing, bodyPrefix = '') {
   const email = getListingEmail(listing);
   if (!email) return '';
 
-  const subject = `UMich Subleases inquiry about ${listing?.title || 'your listing'}`;
-  const body = bodyPrefix || `Hi, I'm interested in ${listing?.title || 'your listing'}.`;
+  const title = listing?.title || 'your listing';
+  const subject = `UMich Subleases — Inquiry about: ${title}`;
+
+  // Build a friendly multi-line body with a permalink and some listing details.
+  const listingPath = toAppPath(`listing/${encodeURIComponent(String(listing?.id || ''))}`);
+  const listingUrl = `${window.location.origin.replace(/\/+$/,'')}${listingPath}`;
+
+  const lines = [];
+  if (bodyPrefix) lines.push(bodyPrefix.trim());
+  lines.push(`Hi,`);
+  lines.push('');
+  lines.push(`I'm interested in your listing: ${title}`);
+  lines.push(`Listing: ${listingUrl}`);
+  if (Number.isFinite(Number(listing?.price))) lines.push(`Price: ${numberFormatter.format(listing.price)}`);
+  if (listing?.available_from || listing?.available_to)
+    lines.push(
+      `Available: ${listing?.available_from ? formatDate(listing.available_from) : 'N/A'} — ${
+        listing?.available_to ? formatDate(listing.available_to) : 'N/A'
+      }`
+    );
+  lines.push('');
+  lines.push('A little about me: [your name, move-in date, short message]');
+  lines.push('');
+  lines.push('Thanks,');
+  lines.push('[Your name]');
+
+  const body = lines.join('\n');
   return buildMailtoHref(email, subject, body);
 }
 
