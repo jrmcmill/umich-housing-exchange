@@ -258,7 +258,7 @@ function ListingCard({ listing, index, onNavigate }) {
             Available {formatDate(listing.available_from)} - {formatDate(listing.available_to)}
           </span>
           <button className="button button--ghost" type="button" onClick={() => onNavigate(route)}>
-            View details
+            View listing
           </button>
         </div>
       </div>
@@ -276,7 +276,7 @@ function AuthCard({
   codeSent,
   onSendCode,
   onVerifyCode,
-  title = 'Sign in to create a listing',
+  title = 'Sign in to continue',
   intro = 'Enter the 8-digit code Supabase emails to you',
 }) {
   return (
@@ -319,8 +319,8 @@ function AuthCard({
             </label>
           ) : null}
           <div className="submit-form__actions">
-            <button className="button button--primary" type="submit" disabled={authLoading}>
-              {authLoading ? (codeSent ? 'Verifying code...' : 'Sending code...') : codeSent ? 'Verify code' : 'Send verification code'}
+              <button className="button button--primary" type="submit" disabled={authLoading}>
+                {authLoading ? (codeSent ? 'Verifying code...' : 'Sending code...') : codeSent ? 'Verify code' : 'Send verification code'}
             </button>
             {codeSent ? (
               <button className="button button--secondary" type="button" onClick={onSendCode} disabled={authLoading}>
@@ -543,7 +543,7 @@ function App() {
         : route.page === 'listing' && currentListing && !currentUser
           ? 'Sign in required | UMich Subleases'
         : route.page === 'submit'
-          ? 'Submit a Listing | UMich Subleases'
+          ? 'Post a Listing | UMich Subleases'
           : route.page === 'listing'
             ? 'Listing not found | UMich Subleases'
             : 'UMich Subleases';
@@ -872,7 +872,7 @@ function App() {
               Explore listings
             </a>
             <button className="button button--primary" type="button" onClick={() => navigate('submit')}>
-              Submit a listing
+              Post a listing
             </button>
           </div>
         </div>
@@ -1004,7 +1004,7 @@ function App() {
         </div>
         <div className="info-band__actions">
           <button className="button button--primary" type="button" onClick={() => navigate('submit')}>
-            Open submission form
+            Post a listing
           </button>
           {visibleListings[0] ? (
             <button className="button button--secondary" type="button" onClick={() => navigate(`listing/${visibleListings[0].id}`)}>
@@ -1055,7 +1055,7 @@ function App() {
                   </span>
                 </div>
                 <button className="button button--ghost" type="button" onClick={() => navigate(`listing/${listing.id}`)}>
-                  Open
+                  View listing
                 </button>
               </article>
             ))}
@@ -1104,6 +1104,11 @@ function App() {
               title="Sign in to continue"
               intro="Use your @umich.edu email to unlock this listing detail page."
             />
+            <div className="submit-form__actions">
+              <button className="button button--secondary" type="button" onClick={() => navigate('')}>
+                Back to listings
+              </button>
+            </div>
           </section>
         </main>
       );
@@ -1152,7 +1157,7 @@ function App() {
                   hasContactPhone && currentUser ? (
                     <div className="contact-menu">
                       <button className="button button--primary" type="button" onClick={() => setContactOpen((open) => !open)}>
-                        Contact
+                        Contact owner
                       </button>
                       {contactOpen ? (
                         <div className="contact-menu__panel">
@@ -1190,7 +1195,7 @@ function App() {
                     </div>
                   ) : (
                     <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
-                      Contact
+                      Contact owner
                     </a>
                   )
                 ) : null}
@@ -1297,57 +1302,14 @@ function App() {
             <h2>Listing notes</h2>
             <p>{currentListing.description}</p>
             <div className="detail-hero__actions">
-              {contactEmailHref ? (
-                hasContactPhone && currentUser ? (
-                  <div className="contact-menu contact-menu--inline">
-                    <button className="button button--primary" type="button" onClick={() => setContactOpen((open) => !open)}>
-                      Contact now
-                    </button>
-                    {contactOpen ? (
-                      <div className="contact-menu__panel">
-                        <div className="contact-menu__switcher">
-                          <button
-                            className={`button ${contactView === 'email' ? 'button--primary' : 'button--ghost'}`}
-                            type="button"
-                            onClick={() => setContactView('email')}
-                          >
-                            Email
-                          </button>
-                          <button
-                            className={`button ${contactView === 'phone' ? 'button--primary' : 'button--ghost'}`}
-                            type="button"
-                            onClick={() => setContactView('phone')}
-                          >
-                            Phone
-                          </button>
-                        </div>
-                        {contactView === 'phone' ? (
-                          <div className="contact-menu__details">
-                            <strong>{contactPhone}</strong>
-                            <span>Phone is shown only to signed-in users.</span>
-                            <a className="button button--secondary" href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`} target="_blank" rel="noreferrer">
-                              Call / text
-                            </a>
-                          </div>
-                        ) : (
-                          <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
-                            Email {contactEmail}
-                          </a>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
-                    Contact now
-                  </a>
-                )
-              ) : null}
               <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
-                Submit your own listing
+                Post a listing
               </button>
               <button className="button button--ghost" type="button" onClick={() => copyToClipboard(window.location.href, 'Link copied')}>
-                Copy route
+                Copy link
+              </button>
+              <button className="button button--ghost" type="button" onClick={() => navigate('')}>
+                Back to listings
               </button>
             </div>
           </section>
@@ -1417,7 +1379,7 @@ function App() {
                 </span>
                 <div className="submit-form__actions">
                   <button className="button button--secondary" type="button" onClick={() => navigate(`listing/${ownListings[0].id}`)}>
-                    Open listing
+                    View listing
                   </button>
                   <button className="button button--danger" type="button" onClick={() => deleteListing(ownListings[0].id)}>
                     Delete listing
@@ -1669,7 +1631,7 @@ function App() {
             Browse
           </button>
           <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
-            Submit
+            Post
           </button>
           {currentUser ? (
             <button className="button button--secondary" type="button" onClick={() => supabase?.auth.signOut()}>
