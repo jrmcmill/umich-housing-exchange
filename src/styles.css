@@ -458,6 +458,8 @@ h3 {
 .badge--deal {
   background: linear-gradient(180deg, var(--maize), #ffe26a);
   color: var(--blue);
+  left: auto;
+  right: 14px;
 }
 
 .badge--demo {
