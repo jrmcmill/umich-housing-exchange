@@ -1630,7 +1630,11 @@ function App() {
             <button className="button button--secondary" type="button" onClick={() => supabase?.auth.signOut()}>
               Sign out
             </button>
-          ) : null}
+          ) : (
+            <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
+              Sign in
+            </button>
+          )}
         </div>
       </header>
       {renderContent()}
