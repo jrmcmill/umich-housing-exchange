@@ -266,15 +266,27 @@ function ListingCard({ listing, index, onNavigate }) {
   );
 }
 
-function AuthCard({ authEmail, setAuthEmail, authCode, setAuthCode, authMessage, authLoading, codeSent, onSendCode, onVerifyCode }) {
+function AuthCard({
+  authEmail,
+  setAuthEmail,
+  authCode,
+  setAuthCode,
+  authMessage,
+  authLoading,
+  codeSent,
+  onSendCode,
+  onVerifyCode,
+  title = 'Sign in to create a listing',
+  intro = 'Enter the 8-digit code Supabase emails to you',
+}) {
   return (
     <section className="surface auth-panel">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Account required</p>
-          <h2>Sign in to create a listing</h2>
+          <h2>{title}</h2>
         </div>
-        <p>Enter the 8-digit code Supabase emails to you</p>
+        <p>{intro}</p>
       </div>
       <div className="auth-grid">
         <form className="submit-form" onSubmit={codeSent ? onVerifyCode : onSendCode}>
@@ -526,8 +538,10 @@ function App() {
   useEffect(() => {
     const canonicalHref = window.location.href;
     document.title =
-      route.page === 'listing' && currentListing
+      route.page === 'listing' && currentListing && currentUser
         ? `${currentListing.title} | UMich Subleases`
+        : route.page === 'listing' && currentListing && !currentUser
+          ? 'Sign in required | UMich Subleases'
         : route.page === 'submit'
           ? 'Submit a Listing | UMich Subleases'
           : route.page === 'listing'
@@ -538,8 +552,10 @@ function App() {
     if (meta) {
       meta.setAttribute(
         'content',
-        route.page === 'listing' && currentListing
+        route.page === 'listing' && currentListing && currentUser
           ? `${currentListing.title} in ${currentListing.location}. ${currentListing.description}`
+          : route.page === 'listing' && currentListing && !currentUser
+            ? 'Sign in to view this listing detail page.'
           : 'Browse and submit UMich subleases in Ann Arbor.',
       );
     }
@@ -1059,6 +1075,35 @@ function App() {
             <button className="button button--primary" type="button" onClick={() => navigate('')}>
               Back to listings
             </button>
+          </section>
+        </main>
+      );
+    }
+
+    if (!currentUser) {
+      return (
+        <main className="view view--listing">
+          <section className="surface submit-page">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Signed out</p>
+                <h1>Sign in to view this listing</h1>
+              </div>
+              <p>Listing details, including contact phone numbers, are only available after sign-in.</p>
+            </div>
+            <AuthCard
+              authEmail={authEmail}
+              setAuthEmail={setAuthEmail}
+              authCode={authCode}
+              setAuthCode={setAuthCode}
+              authMessage={authMessage}
+              authLoading={authLoading}
+              codeSent={codeSent}
+              onSendCode={sendCode}
+              onVerifyCode={verifyCode}
+              title="Sign in to continue"
+              intro="Use your @umich.edu email to unlock this listing detail page."
+            />
           </section>
         </main>
       );
