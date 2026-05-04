@@ -460,6 +460,11 @@ h3 {
   color: var(--blue);
 }
 
+.badge--demo {
+  background: linear-gradient(180deg, var(--blue), var(--blue-soft));
+  color: var(--maize);
+}
+
 .listing-card__body {
   display: grid;
   gap: 14px;

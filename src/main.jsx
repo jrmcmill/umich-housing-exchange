@@ -140,6 +140,7 @@ function ListingCard({ listing, index, onNavigate }) {
     <article className="listing-card reveal" style={{ '--delay': `${index * 70}ms` }}>
       <button className="listing-card__media" type="button" aria-label={`Open ${listing.title}`} onClick={() => onNavigate(route)}>
         <img src={listing.images[0]} alt={listing.title} loading="lazy" />
+        {listing.is_demo ? <span className="badge badge--demo">DEMO LISTING</span> : null}
         {listing.good_deal ? <span className="badge badge--deal">Good deal</span> : null}
       </button>
       <div className="listing-card__body">

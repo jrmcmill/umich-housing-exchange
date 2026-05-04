@@ -22,6 +22,7 @@ export const listings = [
     gender_preference: 'No preference',
     created_at: '2026-04-22T14:30:00Z',
     good_deal: true,
+    is_demo: true,
   },
   {
     id: 'kerrytown-2br-summer',
@@ -46,6 +47,7 @@ export const listings = [
     gender_preference: 'Female preferred',
     created_at: '2026-04-28T16:00:00Z',
     good_deal: false,
+    is_demo: true,
   },
   {
     id: 'central-campus-1br-fall',
@@ -69,6 +71,7 @@ export const listings = [
     gender_preference: 'No preference',
     created_at: '2026-04-30T11:15:00Z',
     good_deal: false,
+    is_demo: true,
   },
   {
     id: 'west-side-4br-house',
@@ -93,6 +96,7 @@ export const listings = [
     gender_preference: 'Open to all',
     created_at: '2026-04-25T09:40:00Z',
     good_deal: true,
+    is_demo: true,
   },
   {
     id: 'kingsley-1br-short-term',
@@ -116,6 +120,7 @@ export const listings = [
     gender_preference: 'Male preferred',
     created_at: '2026-05-01T08:20:00Z',
     good_deal: true,
+    is_demo: true,
   },
   {
     id: 'medical-center-studio',
@@ -139,5 +144,6 @@ export const listings = [
     gender_preference: 'No preference',
     created_at: '2026-05-02T19:10:00Z',
     good_deal: true,
+    is_demo: true,
   },
 ];
