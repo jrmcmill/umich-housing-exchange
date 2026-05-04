@@ -174,7 +174,7 @@ function AuthCard({ authEmail, setAuthEmail, authCode, setAuthCode, authMessage,
           <p className="eyebrow">Account required</p>
           <h2>Sign in to create a listing</h2>
         </div>
-        <p>Enter the six-digit code Supabase emails to you</p>
+        <p>Enter the 8-digit code Supabase emails to you</p>
       </div>
       <div className="auth-grid">
         <form className="submit-form" onSubmit={codeSent ? onVerifyCode : onSendCode}>
@@ -198,9 +198,9 @@ function AuthCard({ authEmail, setAuthEmail, authCode, setAuthCode, authMessage,
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={8}
                 required
-                placeholder="123456"
+                placeholder="12345678"
                 value={authCode}
                 onChange={(event) => setAuthCode(event.target.value)}
               />
@@ -520,7 +520,7 @@ function App() {
     } else {
       setCodeSent(true);
       setAuthCode('');
-      setAuthMessage('Verification code sent. Check your inbox and enter the six-digit code here.');
+      setAuthMessage('Verification code sent. Check your inbox and enter the 8-digit code here.');
       setFlash({ type: 'success', message: 'Verification code sent.' });
     }
 
@@ -542,7 +542,7 @@ function App() {
 
     const code = authCode.trim();
     if (!code) {
-      setAuthMessage('Enter the six-digit verification code.');
+      setAuthMessage('Enter the 8-digit verification code.');
       return;
     }
 
