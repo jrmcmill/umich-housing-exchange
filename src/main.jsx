@@ -1072,7 +1072,7 @@ function App() {
                 </label>
                 <label>
                   Rent / month *
-                  <input name="price" type="number" min="0" step="25" required placeholder="950" />
+                  <input name="price" type="number" min="0" step="1" required placeholder="950" />
                 </label>
                 <label>
                   Bedrooms *
