@@ -79,6 +79,7 @@ function parseRoute(pathname = window.location.pathname) {
 
   if (!cleanPath || cleanPath === 'index.html') return { page: 'home' };
   if (cleanPath === 'submit') return { page: 'submit' };
+  if (cleanPath === 'signin') return { page: 'signin' };
 
   const listingMatch = cleanPath.match(/^listing\/([^/]+)$/);
   if (listingMatch) {
@@ -1652,6 +1653,39 @@ function App() {
     }
 
     if (route.page === 'listing') return renderListingPage();
+    if (route.page === 'signin') {
+      return (
+        <main className="view view--listing">
+          <section className="surface submit-page">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Account required</p>
+                <h1>Sign in to continue</h1>
+              </div>
+              <p>Use your @umich.edu email to sign in and access account features.</p>
+            </div>
+            <AuthCard
+              authEmail={authEmail}
+              setAuthEmail={setAuthEmail}
+              authCode={authCode}
+              setAuthCode={setAuthCode}
+              authMessage={authMessage}
+              authLoading={authLoading}
+              codeSent={codeSent}
+              onSendCode={sendCode}
+              onVerifyCode={verifyCode}
+              title="Sign in to continue"
+              intro="Enter the 8-digit code Supabase sends to your @umich.edu address."
+            />
+            <div className="submit-form__actions">
+              <button className="button button--secondary" type="button" onClick={() => navigate('')}>
+                Back to listings
+              </button>
+            </div>
+          </section>
+        </main>
+      );
+    }
     if (route.page === 'submit') return renderSubmitPage();
     return renderHome();
   };
@@ -1678,7 +1712,7 @@ function App() {
               Sign out
             </button>
           ) : (
-            <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
+            <button className="button button--secondary" type="button" onClick={() => navigate('signin')}>
               Sign in
             </button>
           )}
