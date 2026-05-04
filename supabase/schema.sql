@@ -11,7 +11,7 @@ create table if not exists public.listings (
   available_to date not null,
   location text not null,
   neighborhood text not null,
-  description text not null check (char_length(description) >= 20),
+  description text not null check (char_length(description) >= 20 and char_length(description) <= 5000),
   images text[] not null default '{}'::text[],
   contact_type text not null check (contact_type in ('email', 'phone', 'link')),
   contact_value text not null,
@@ -70,3 +70,17 @@ create policy "Authenticated users can delete their own listings"
   for delete
   to authenticated
   using (auth.uid() = user_id);
+
+create or replace function update_updated_at_column()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists update_listings_updated_at on public.listings;
+create trigger update_listings_updated_at
+  before update on public.listings
+  for each row
+  execute function update_updated_at_column();
