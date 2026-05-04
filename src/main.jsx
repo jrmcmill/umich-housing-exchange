@@ -250,6 +250,7 @@ function App() {
   const flashTimerRef = useRef(null);
 
   const listings = useMemo(() => mergeListings(feedListings, ownListings), [feedListings, ownListings]);
+  const liveListingsCount = useMemo(() => listings.filter((l) => !l.is_demo).length, [listings]);
   const currentUser = session?.user || null;
 
   const visibleListings = useMemo(() => {
@@ -662,7 +663,7 @@ function App() {
         </div>
         <aside className="hero__stats reveal" style={{ '--stagger': '90ms' }}>
           <div>
-            <strong>{listings.length}</strong>
+            <strong>{liveListingsCount}</strong>
             <span>Live listings</span>
           </div>
           <div>
