@@ -59,5 +59,13 @@ For Supabase on GitHub Pages, do not commit `.env`. Instead, add repository secr
 1. Create a Supabase project.
 2. Run [supabase/schema.sql](supabase/schema.sql) in the SQL editor.
 3. Copy [.env.example](.env.example) to `.env` and fill in your project URL and anon key.
-4. In Supabase Auth email templates, change the login email to include `{{ .Token }}` so it sends a six-digit code instead of a link.
+4. In Supabase Auth email templates, replace the default magic-link body with the OTP version below so it sends a code instead of a link:
+
+	```html
+	<p>Enter this code to verify your email:</p>
+	<h2>{{ .Token }}</h2>
+	<p>This code expires in 24 hours.</p>
+	```
+
+	If Supabase shows an email rate-limit warning while you are retesting, wait a bit before requesting another code.
 5. Users verify ownership by entering the emailed code before they can publish.
