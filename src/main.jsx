@@ -562,6 +562,18 @@ function App() {
     } else {
       setAuthMessage('Email verified. You are now signed in.');
       setFlash({ type: 'success', message: 'Email verified.' });
+
+      // Ensure app state reflects the freshly issued session immediately
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        setSession(sessionData.session || null);
+      } catch (err) {
+        // ignore; onAuthStateChange will handle session updates
+      }
+
+      // Clear the verification UI
+      setCodeSent(false);
+      setAuthCode('');
     }
 
     setAuthLoading(false);
