@@ -511,7 +511,7 @@ function App() {
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.trim(),
       options: {
-        shouldCreateUser: false,
+        shouldCreateUser: true,
       },
     });
 
