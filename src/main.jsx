@@ -8,11 +8,38 @@ const storageKeys = {
   route: 'umich-subleases:route',
 };
 
+const ADMIN_EMAIL = 'jrmcmill@umich.edu';
+
+const bedroomOptions = [
+  { label: 'Studio', value: '0' },
+  { label: '1 bedroom', value: '1' },
+  { label: '2 bedrooms', value: '2' },
+  { label: '3 bedrooms', value: '3' },
+  { label: '4 bedrooms', value: '4' },
+  { label: '5+ bedrooms', value: '5' },
+];
+
+const genderPreferenceOptions = ['all', 'No preference', 'Male preferred', 'Female preferred', 'Open to all'];
+
+const utilityOptions = ['Electricity', 'Water', 'Gas', 'Heat', 'Internet', 'Trash', 'Sewer'];
+
+const amenityOptions = [
+  'In-unit washer/dryer',
+  'Parking',
+  'Roof access',
+  'Pool',
+  'Gym',
+  'Air conditioning',
+  'Dishwasher',
+  'Balcony/patio',
+];
+
 const defaultFilters = {
   search: '',
   maxPrice: 1500,
   bedrooms: 'all',
   location: 'all',
+  genderPreference: 'all',
   sort: 'newest',
 };
 
@@ -27,6 +54,10 @@ const numberFormatter = new Intl.NumberFormat('en-US', {
 
 function isUmichEmail(email = '') {
   return /@umich\.edu$/i.test(String(email).trim());
+}
+
+function isAdminEmail(email = '') {
+  return String(email).trim().toLowerCase() === ADMIN_EMAIL;
 }
 
 function getAppBasePath() {
@@ -58,15 +89,38 @@ function parseRoute(pathname = window.location.pathname) {
 }
 
 function normalizeListing(listing, source = 'feed') {
+  const normalizeTextArray = (value) =>
+    Array.isArray(value)
+      ? value
+          .map((item) => String(item || '').trim())
+          .filter(Boolean)
+      : [];
+
+  const normalizeNumber = (value, fallback = 0) => {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : fallback;
+  };
+
   return {
     ...listing,
     price: Number(listing.price),
-    bedrooms: Number(listing.bedrooms),
-    bathrooms: Number(listing.bathrooms),
+    bedrooms: normalizeNumber(listing.bedrooms),
+    bathrooms: normalizeNumber(listing.bathrooms, 1),
     neighborhood: listing.neighborhood || listing.location,
     images: Array.isArray(listing.images) && listing.images.length ? listing.images : [placeholderImage],
     contact: listing.contact || { type: 'email', value: '' },
     gender_preference: listing.gender_preference || 'No preference',
+    roommates_during_lease: normalizeNumber(listing.roommates_during_lease ?? listing.roommates, 0),
+    amenities: normalizeTextArray(listing.amenities),
+    amenities_other: String(listing.amenities_other || '').trim(),
+    utilities_included_scope: listing.utilities_included_scope || 'none',
+    utilities_included: normalizeTextArray(listing.utilities_included),
+    utilities_excluded: normalizeTextArray(listing.utilities_excluded),
+    utilities_excluded_monthly_price: Number.isFinite(Number(listing.utilities_excluded_monthly_price))
+      ? Number(listing.utilities_excluded_monthly_price)
+      : null,
+    shared_bedroom: Boolean(listing.shared_bedroom),
+    shared_bathroom: Boolean(listing.shared_bathroom),
     created_at: listing.created_at || new Date().toISOString(),
     good_deal: Boolean(listing.good_deal),
     source,
@@ -87,6 +141,7 @@ function mergeListings(...groups) {
 function bedroomLabel(bedrooms) {
   if (bedrooms === 0) return 'Studio';
   if (bedrooms === 1) return '1BR';
+  if (bedrooms >= 5) return '5BR+';
   return `${bedrooms}BR`;
 }
 
@@ -100,6 +155,14 @@ function formatDate(dateString) {
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+}
+
+function formatList(values, emptyValue = 'None') {
+  return values.length ? values.join(', ') : emptyValue;
+}
+
+function formatBooleanLabel(value) {
+  return value ? 'Yes' : 'No';
 }
 
 function getContactHref(listing) {
@@ -239,6 +302,7 @@ function App() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [feedListings, setFeedListings] = useState([]);
   const [ownListings, setOwnListings] = useState([]);
+  const [loadingOwnListings, setLoadingOwnListings] = useState(false);
   const [session, setSession] = useState(null);
   const [filters, setFilters] = useState(defaultFilters);
   const [flash, setFlash] = useState(null);
@@ -252,6 +316,8 @@ function App() {
   const listings = useMemo(() => mergeListings(feedListings, ownListings), [feedListings, ownListings]);
   const liveListingsCount = useMemo(() => listings.filter((l) => !l.is_demo).length, [listings]);
   const currentUser = session?.user || null;
+  const isAdminUser = isAdminEmail(currentUser?.email || '');
+  const hasExistingListing = currentUser ? ownListings.length > 0 : false;
 
   const visibleListings = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
@@ -268,7 +334,8 @@ function App() {
         const matchesPrice = listing.price <= maxPrice;
         const matchesBedrooms = filters.bedrooms === 'all' || listing.bedrooms === Number(filters.bedrooms);
         const matchesLocation = filters.location === 'all' || listing.location === filters.location;
-        return matchesSearch && matchesPrice && matchesBedrooms && matchesLocation;
+        const matchesGender = filters.genderPreference === 'all' || listing.gender_preference === filters.genderPreference;
+        return matchesSearch && matchesPrice && matchesBedrooms && matchesLocation && matchesGender;
       })
       .sort((left, right) => {
         if (filters.sort === 'price-asc') return left.price - right.price;
@@ -378,10 +445,13 @@ function App() {
   useEffect(() => {
     if (!databaseConfigured || !supabase || !currentUser?.id) {
       setOwnListings([]);
+      setLoadingOwnListings(false);
       return undefined;
     }
 
     let cancelled = false;
+
+    setLoadingOwnListings(true);
 
     async function loadOwnListings() {
       const { data, error } = await supabase
@@ -394,6 +464,7 @@ function App() {
         if (!error && Array.isArray(data)) {
           setOwnListings(data.map((listing) => normalizeListing(listing, 'own')));
         }
+        setLoadingOwnListings(false);
       }
     }
 
@@ -598,6 +669,12 @@ function App() {
       return;
     }
 
+    if (!isAdminUser && hasExistingListing) {
+      setFlash({ type: 'error', message: 'You can only have one active listing at a time. Delete your current listing before posting another.' });
+      navigate('submit');
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const title = String(formData.get('title') || '').trim();
     const price = Number(formData.get('price'));
@@ -615,9 +692,38 @@ function App() {
     const contactType = String(formData.get('contact_type') || 'email');
     const contactValue = String(formData.get('contact_value') || '').trim();
     const genderPreference = String(formData.get('gender_preference') || 'No preference');
+    const roommatesDuringLease = Number(formData.get('roommates_during_lease'));
+    const amenities = formData
+      .getAll('amenities')
+      .map((value) => String(value).trim())
+      .filter(Boolean);
+    const amenitiesOther = String(formData.get('amenities_other') || '').trim();
+    const utilitiesIncludedScope = String(formData.get('utilities_included_scope') || 'none');
+    const utilitiesIncluded = formData
+      .getAll('utilities_included')
+      .map((value) => String(value).trim())
+      .filter(Boolean);
+    const utilitiesExcluded = String(formData.get('utilities_excluded') || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const utilitiesExcludedMonthlyPriceRaw = String(formData.get('utilities_excluded_monthly_price') || '').trim();
+    const utilitiesExcludedMonthlyPrice = utilitiesExcludedMonthlyPriceRaw ? Number(utilitiesExcludedMonthlyPriceRaw) : null;
+    const sharedBedroom = formData.get('shared_bedroom') === 'on';
+    const sharedBathroom = formData.get('shared_bathroom') === 'on';
 
     if (!title || !Number.isFinite(price) || !availableFrom || !availableTo || !location || !description || !contactValue) {
       setFlash({ type: 'error', message: 'Please fill in the required fields to submit a listing.' });
+      return;
+    }
+
+    if (utilitiesIncludedScope === 'some' && !utilitiesIncluded.length) {
+      setFlash({ type: 'error', message: 'Select at least one included utility or change the utilities setting to none/all.' });
+      return;
+    }
+
+    if (utilitiesExcludedMonthlyPriceRaw && !Number.isFinite(utilitiesExcludedMonthlyPrice)) {
+      setFlash({ type: 'error', message: 'Enter a valid monthly price for excluded utilities.' });
       return;
     }
 
@@ -636,6 +742,15 @@ function App() {
       contact_type: contactType,
       contact_value: contactValue,
       gender_preference: genderPreference,
+      roommates_during_lease: Number.isFinite(roommatesDuringLease) ? roommatesDuringLease : 0,
+      amenities,
+      amenities_other: amenitiesOther,
+      utilities_included_scope: utilitiesIncludedScope,
+      utilities_included: utilitiesIncludedScope === 'all' ? utilityOptions : utilitiesIncluded,
+      utilities_excluded: utilitiesExcluded,
+      utilities_excluded_monthly_price: utilitiesExcludedMonthlyPrice,
+      shared_bedroom: sharedBedroom,
+      shared_bathroom: sharedBathroom,
       status: 'published',
     };
 
@@ -774,6 +889,20 @@ function App() {
             </select>
           </label>
           <label>
+            Gender preference
+            <select
+              name="genderPreference"
+              value={filters.genderPreference}
+              onChange={(event) => setFilters((current) => ({ ...current, genderPreference: event.target.value }))}
+            >
+              {genderPreferenceOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option === 'all' ? 'Any' : option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Sort
             <select
               name="sort"
@@ -886,6 +1015,19 @@ function App() {
     }
 
     const relatedListings = visibleListings.filter((candidate) => candidate.id !== currentListing.id).slice(0, 3);
+    const utilitiesIncludedText =
+      currentListing.utilities_included_scope === 'all'
+        ? 'All utilities included'
+        : currentListing.utilities_included_scope === 'some'
+          ? formatList(currentListing.utilities_included)
+          : 'None included';
+    const utilitiesExcludedText = currentListing.utilities_excluded.length
+      ? `${formatList(currentListing.utilities_excluded)}${
+          currentListing.utilities_excluded_monthly_price != null
+            ? ` · ${numberFormatter.format(currentListing.utilities_excluded_monthly_price)} / mo`
+            : ''
+        }`
+      : 'None';
 
     return (
       <main className="view view--listing">
@@ -960,6 +1102,34 @@ function App() {
                 <div>
                   <dt>Gender preference</dt>
                   <dd>{currentListing.gender_preference}</dd>
+                </div>
+                <div>
+                  <dt>Roommates during lease</dt>
+                  <dd>{currentListing.roommates_during_lease}</dd>
+                </div>
+                <div>
+                  <dt>Shared bedroom</dt>
+                  <dd>{formatBooleanLabel(currentListing.shared_bedroom)}</dd>
+                </div>
+                <div>
+                  <dt>Shared bathroom</dt>
+                  <dd>{formatBooleanLabel(currentListing.shared_bathroom)}</dd>
+                </div>
+                <div>
+                  <dt>Amenities</dt>
+                  <dd>{currentListing.amenities.length ? formatList(currentListing.amenities) : 'None listed'}</dd>
+                </div>
+                <div>
+                  <dt>Other amenities</dt>
+                  <dd>{currentListing.amenities_other || 'None'}</dd>
+                </div>
+                <div>
+                  <dt>Utilities included</dt>
+                  <dd>{utilitiesIncludedText}</dd>
+                </div>
+                <div>
+                  <dt>Excluded utilities</dt>
+                  <dd>{utilitiesExcludedText}</dd>
                 </div>
                 <div>
                   <dt>Posted</dt>
@@ -1041,6 +1211,32 @@ function App() {
               The app still renders public listings, but secure publishing is disabled until the backend is configured.
             </p>
           </section>
+        ) : loadingOwnListings ? (
+          <section className="surface loading-surface">
+            <div className="loading-hero" />
+          </section>
+        ) : !isAdminUser && hasExistingListing ? (
+          <section className="surface auth-panel">
+            <p className="eyebrow">One listing at a time</p>
+            <h2>You already have an active listing</h2>
+            <p>Delete your current listing before posting another. Admin accounts are exempt.</p>
+            {ownListings[0] ? (
+              <div className="submission-lock">
+                <strong>{ownListings[0].title}</strong>
+                <span>
+                  {ownListings[0].location} · {numberFormatter.format(ownListings[0].price)}
+                </span>
+                <div className="submit-form__actions">
+                  <button className="button button--secondary" type="button" onClick={() => navigate(`listing/${ownListings[0].id}`)}>
+                    Open listing
+                  </button>
+                  <button className="button button--danger" type="button" onClick={() => deleteListing(ownListings[0].id)}>
+                    Delete listing
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
         ) : !currentUser ? (
           <AuthCard
             authEmail={authEmail}
@@ -1076,11 +1272,21 @@ function App() {
                 </label>
                 <label>
                   Bedrooms *
-                  <input name="bedrooms" type="number" min="0" step="1" required placeholder="2" />
+                  <select name="bedrooms" required defaultValue="1">
+                    {bedroomOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   Bathrooms *
                   <input name="bathrooms" type="number" min="1" step="1" required placeholder="1" />
+                </label>
+                <label>
+                  Roommates during lease *
+                  <input name="roommates_during_lease" type="number" min="0" step="1" required placeholder="0" />
                 </label>
                 <label>
                   Available from *
@@ -1123,6 +1329,70 @@ function App() {
                   Photos
                   <input name="images" type="text" placeholder="Image URL 1, Image URL 2" />
                 </label>
+              </div>
+              <div className="form-grid__full form-section">
+                <div className="form-section__heading">
+                  <h3>Amenities</h3>
+                  <p>Select the amenities that apply and use the other field for anything custom.</p>
+                </div>
+                <div className="checkbox-grid">
+                  {amenityOptions.map((amenity) => (
+                    <label className="checkbox-option" key={amenity}>
+                      <input type="checkbox" name="amenities" value={amenity} />
+                      <span>{amenity}</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="form-inline-field">
+                  Other amenities
+                  <input name="amenities_other" type="text" placeholder="EV charging, bike storage, etc." />
+                </label>
+              </div>
+              <div className="form-grid__full form-section">
+                <div className="form-section__heading">
+                  <h3>Utilities</h3>
+                  <p>Choose whether utilities are included, and list any excluded utilities with their monthly cost.</p>
+                </div>
+                <label className="form-inline-field">
+                  Included utilities
+                  <select name="utilities_included_scope" defaultValue="none">
+                    <option value="all">All utilities included</option>
+                    <option value="some">Some utilities included</option>
+                    <option value="none">No utilities included</option>
+                  </select>
+                </label>
+                <div className="checkbox-grid checkbox-grid--compact">
+                  {utilityOptions.map((utility) => (
+                    <label className="checkbox-option" key={utility}>
+                      <input type="checkbox" name="utilities_included" value={utility} />
+                      <span>{utility}</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="form-inline-field">
+                  Excluded utilities
+                  <input name="utilities_excluded" type="text" placeholder="Electricity, internet" />
+                </label>
+                <label className="form-inline-field">
+                  Monthly cost for excluded utilities
+                  <input name="utilities_excluded_monthly_price" type="number" min="0" step="1" placeholder="75" />
+                </label>
+              </div>
+              <div className="form-grid__full form-section">
+                <div className="form-section__heading">
+                  <h3>Sharing</h3>
+                  <p>Mark whether the bedroom or bathroom is shared.</p>
+                </div>
+                <div className="checkbox-grid checkbox-grid--compact">
+                  <label className="checkbox-option">
+                    <input name="shared_bedroom" type="checkbox" />
+                    <span>Shared bedroom</span>
+                  </label>
+                  <label className="checkbox-option">
+                    <input name="shared_bathroom" type="checkbox" />
+                    <span>Shared bathroom</span>
+                  </label>
+                </div>
               </div>
               <label className="form-grid__full">
                 Description *

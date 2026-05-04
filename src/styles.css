@@ -697,6 +697,84 @@ h3 {
   gap: 8px;
 }
 
+.form-section {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(0, 39, 76, 0.04);
+  border: 1px solid rgba(0, 39, 76, 0.06);
+}
+
+.form-section__heading {
+  display: grid;
+  gap: 4px;
+}
+
+.form-section__heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--blue);
+}
+
+.form-section__heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.checkbox-grid--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.submit-form .checkbox-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 39, 76, 0.12);
+  background: rgba(255, 255, 255, 0.84);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.submit-form .checkbox-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+.form-inline-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.submission-lock {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(0, 39, 76, 0.05);
+  border: 1px solid rgba(0, 39, 76, 0.08);
+}
+
+.submission-lock strong {
+  color: var(--blue);
+  font-size: 1.05rem;
+}
+
+.submission-lock span {
+  color: var(--muted);
+}
+
 .submit-form textarea {
   resize: vertical;
   min-height: 180px;
@@ -983,6 +1061,7 @@ h3 {
   .listings-grid,
   .listings-grid--compact,
   .detail-grid,
+  .checkbox-grid,
   .detail-facts,
   .detail-gallery,
   .submit-layout,
