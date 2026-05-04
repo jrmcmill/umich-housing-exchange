@@ -655,7 +655,7 @@ function App() {
             <a className="button button--primary" href="#listings">
               Explore listings
             </a>
-            <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
+            <button className="button button--primary" type="button" onClick={() => navigate('submit')}>
               Submit a listing
             </button>
           </div>
@@ -1170,10 +1170,10 @@ function App() {
           </div>
         </button>
         <div className="nav__actions">
-          <button className="button button--ghost" type="button" onClick={() => navigate('')}>
+          <button className="button button--secondary" type="button" onClick={() => navigate('')}>
             Browse
           </button>
-          <button className="button button--ghost" type="button" onClick={() => navigate('submit')}>
+          <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
             Submit
           </button>
           {currentUser ? (
