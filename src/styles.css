@@ -825,6 +825,15 @@ h3 {
   background: rgba(255, 255, 255, 0.76);
 }
 
+.button--danger {
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
+  color: white;
+}
+
+.button--danger:hover {
+  box-shadow: 0 14px 30px rgba(220, 38, 38, 0.25);
+}
+
 .flash {
   position: fixed;
   right: 22px;

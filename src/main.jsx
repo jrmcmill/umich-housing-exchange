@@ -653,6 +653,28 @@ function App() {
     navigate(`listing/${nextListing.id}`, { replace: true });
   }
 
+  async function deleteListing(listingId) {
+    if (!databaseConfigured || !supabase) {
+      setFlash({ type: 'error', message: 'Unable to delete listing.' });
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this listing? This cannot be undone.')) {
+      return;
+    }
+
+    const { error } = await supabase.from('listings').delete().eq('id', listingId);
+
+    if (error) {
+      setFlash({ type: 'error', message: error.message || 'Unable to delete listing.' });
+    } else {
+      setFeedListings((current) => current.filter((listing) => listing.id !== listingId));
+      setOwnListings((current) => current.filter((listing) => listing.id !== listingId));
+      setFlash({ type: 'success', message: 'Listing deleted.' });
+      navigate('');
+    }
+  }
+
   const renderHome = () => (
     <main className="view view--home">
       <section className="hero hero--home surface">
@@ -898,6 +920,11 @@ function App() {
                 <button className="button button--ghost" type="button" onClick={() => copyToClipboard(window.location.href)}>
                   Copy link
                 </button>
+                {currentUser?.id === currentListing.user_id ? (
+                  <button className="button button--danger" type="button" onClick={() => deleteListing(currentListing.id)}>
+                    Delete
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1034,7 +1061,7 @@ function App() {
                   <p className="eyebrow">Signed in</p>
                   <h2>Publish as {currentUser.email}</h2>
                 </div>
-                <button className="button button--ghost" type="button" onClick={() => supabase?.auth.signOut()}>
+                <button className="button button--secondary" type="button" onClick={() => supabase?.auth.signOut()}>
                   Sign out
                 </button>
               </div>
@@ -1190,7 +1217,7 @@ function App() {
             Submit
           </button>
           {currentUser ? (
-            <button className="button button--ghost" type="button" onClick={() => supabase?.auth.signOut()}>
+            <button className="button button--secondary" type="button" onClick={() => supabase?.auth.signOut()}>
               Sign out
             </button>
           ) : null}
