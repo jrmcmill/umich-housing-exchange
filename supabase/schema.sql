@@ -14,6 +14,8 @@ create table if not exists public.listings (
   neighborhood text not null,
   description text not null check (char_length(description) >= 20 and char_length(description) <= 5000),
   images text[] not null default '{}'::text[],
+  contact_email text not null,
+  contact_phone text,
   contact_type text not null check (contact_type in ('email', 'phone', 'link')),
   contact_value text not null,
   gender_preference text not null default 'No preference',
@@ -34,6 +36,10 @@ create table if not exists public.listings (
 alter table public.listings add column if not exists roommates_during_lease smallint not null default 0;
 alter table public.listings add column if not exists amenities text[] not null default '{}'::text[];
 alter table public.listings add column if not exists amenities_other text not null default '';
+alter table public.listings add column if not exists contact_email text not null default '';
+alter table public.listings add column if not exists contact_phone text;
+alter table public.listings add column if not exists contact_type text not null default 'email';
+alter table public.listings add column if not exists contact_value text not null default '';
 alter table public.listings add column if not exists utilities_included_scope text not null default 'none';
 alter table public.listings add column if not exists utilities_included text[] not null default '{}'::text[];
 alter table public.listings add column if not exists utilities_excluded text[] not null default '{}'::text[];
@@ -67,6 +73,7 @@ create policy "Authenticated users can create their own listings"
   with check (
     auth.uid() = user_id
     and coalesce(lower(auth.jwt() ->> 'email'), '') like '%@umich.edu'
+    and coalesce(lower(contact_email), '') = coalesce(lower(auth.jwt() ->> 'email'), '')
   );
 
 create or replace function enforce_one_listing_per_user()
@@ -106,6 +113,7 @@ create policy "Authenticated users can update their own listings"
   with check (
     auth.uid() = user_id
     and coalesce(lower(auth.jwt() ->> 'email'), '') like '%@umich.edu'
+    and coalesce(lower(contact_email), '') = coalesce(lower(auth.jwt() ->> 'email'), '')
   );
 
 drop policy if exists "Authenticated users can delete their own listings" on public.listings;

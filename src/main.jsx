@@ -108,7 +108,9 @@ function normalizeListing(listing, source = 'feed') {
     bathrooms: normalizeNumber(listing.bathrooms, 1),
     neighborhood: listing.neighborhood || listing.location,
     images: Array.isArray(listing.images) && listing.images.length ? listing.images : [placeholderImage],
-    contact: listing.contact || { type: 'email', value: '' },
+    contact_email: String(listing.contact_email || listing.contact?.value || '').trim(),
+    contact_phone: String(listing.contact_phone || '').trim(),
+    contact: listing.contact || { type: 'email', value: listing.contact_email || listing.contact?.value || '' },
     gender_preference: listing.gender_preference || 'No preference',
     roommates_during_lease: normalizeNumber(listing.roommates_during_lease ?? listing.roommates, 0),
     amenities: normalizeTextArray(listing.amenities),
@@ -165,19 +167,53 @@ function formatBooleanLabel(value) {
   return value ? 'Yes' : 'No';
 }
 
+function sanitizeEmailValue(value = '') {
+  return String(value || '').trim().replace(/^mailto:/i, '');
+}
+
+function sanitizePhoneValue(value = '') {
+  return String(value || '').trim().replace(/^tel:/i, '');
+}
+
+function getListingEmail(listing) {
+  return sanitizeEmailValue(listing?.contact_email || listing?.contact?.value || '');
+}
+
+function getListingPhone(listing) {
+  const fallbackPhone = listing?.contact?.type === 'phone' ? listing?.contact?.value : '';
+  return sanitizePhoneValue(listing?.contact_phone || fallbackPhone || '');
+}
+
+function buildMailtoHref(email, subject = '', body = '') {
+  const params = new URLSearchParams();
+  if (subject) params.set('subject', subject);
+  if (body) params.set('body', body);
+  return `mailto:${email}${params.toString() ? `?${params.toString()}` : ''}`;
+}
+
 function getContactHref(listing) {
+  const email = getListingEmail(listing);
+  if (email) {
+    return buildMailtoHref(email);
+  }
+
   const contact = listing?.contact || { type: 'email', value: '' };
   const value = String(contact.value || '').trim();
-
-  if (contact.type === 'email') {
-    return value.startsWith('mailto:') ? value : `mailto:${value}`;
-  }
 
   if (contact.type === 'phone') {
     return value.startsWith('tel:') ? value : `tel:${value.replace(/[^\d+]/g, '')}`;
   }
 
   return value;
+}
+
+function getMailtoLink(listing, bodyPrefix = '') {
+  const email = getListingEmail(listing);
+  if (!email) return '';
+
+  const subject = `UMich Subleases inquiry about ${listing?.title || 'your listing'}`;
+  const body = bodyPrefix || `Hi, I'm interested in ${listing?.title || 'your listing'}.`;
+  return buildMailtoHref(email, subject, body);
 }
 
 function loadRouteFromSession() {
@@ -311,6 +347,8 @@ function App() {
   const [authMessage, setAuthMessage] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactView, setContactView] = useState('email');
   const flashTimerRef = useRef(null);
 
   const listings = useMemo(() => mergeListings(feedListings, ownListings), [feedListings, ownListings]);
@@ -354,6 +392,16 @@ function App() {
     if (route.page !== 'listing') return null;
     return listings.find((listing) => listing.id === route.listingId) || null;
   }, [listings, route]);
+
+  useEffect(() => {
+    setContactOpen(false);
+    setContactView('email');
+  }, [currentListing?.id]);
+
+  const contactEmailHref = useMemo(() => (currentListing ? getMailtoLink(currentListing) : ''), [currentListing]);
+  const contactPhone = currentListing ? getListingPhone(currentListing) : '';
+  const contactEmail = currentListing ? getListingEmail(currentListing) : '';
+  const hasContactPhone = Boolean(contactPhone);
 
   const locations = useMemo(() => uniqueSorted(listings.map((listing) => listing.location)), [listings]);
 
@@ -689,8 +737,6 @@ function App() {
       .split(',')
       .map((image) => image.trim())
       .filter(Boolean);
-    const contactType = String(formData.get('contact_type') || 'email');
-    const contactValue = String(formData.get('contact_value') || '').trim();
     const genderPreference = String(formData.get('gender_preference') || 'No preference');
     const roommatesDuringLease = Number(formData.get('roommates_during_lease'));
     const amenities = formData
@@ -711,8 +757,10 @@ function App() {
     const utilitiesExcludedMonthlyPrice = utilitiesExcludedMonthlyPriceRaw ? Number(utilitiesExcludedMonthlyPriceRaw) : null;
     const sharedBedroom = formData.get('shared_bedroom') === 'on';
     const sharedBathroom = formData.get('shared_bathroom') === 'on';
+    const contactEmail = String(currentUser.email || '').trim();
+    const contactPhone = String(formData.get('contact_phone') || '').trim();
 
-    if (!title || !Number.isFinite(price) || !availableFrom || !availableTo || !location || !description || !contactValue) {
+    if (!title || !Number.isFinite(price) || !availableFrom || !availableTo || !location || !description || !contactEmail) {
       setFlash({ type: 'error', message: 'Please fill in the required fields to submit a listing.' });
       return;
     }
@@ -739,8 +787,10 @@ function App() {
       neighborhood,
       description,
       images: images.length ? images : [placeholderImage],
-      contact_type: contactType,
-      contact_value: contactValue,
+      contact_email: contactEmail,
+      contact_phone: contactPhone,
+      contact_type: 'email',
+      contact_value: contactEmail,
       gender_preference: genderPreference,
       roommates_during_lease: Number.isFinite(roommatesDuringLease) ? roommatesDuringLease : 0,
       amenities,
@@ -1053,9 +1103,52 @@ function App() {
               <p className="hero__text">{currentListing.description}</p>
               <div className="detail-hero__price">{numberFormatter.format(currentListing.price)} / month</div>
               <div className="detail-hero__actions">
-                <a className="button button--primary" href={getContactHref(currentListing)} target="_blank" rel="noreferrer">
-                  Contact
-                </a>
+                {contactEmailHref ? (
+                  hasContactPhone && currentUser ? (
+                    <div className="contact-menu">
+                      <button className="button button--primary" type="button" onClick={() => setContactOpen((open) => !open)}>
+                        Contact
+                      </button>
+                      {contactOpen ? (
+                        <div className="contact-menu__panel">
+                          <div className="contact-menu__switcher">
+                            <button
+                              className={`button ${contactView === 'email' ? 'button--primary' : 'button--ghost'}`}
+                              type="button"
+                              onClick={() => setContactView('email')}
+                            >
+                              Email
+                            </button>
+                            <button
+                              className={`button ${contactView === 'phone' ? 'button--primary' : 'button--ghost'}`}
+                              type="button"
+                              onClick={() => setContactView('phone')}
+                            >
+                              Phone
+                            </button>
+                          </div>
+                          {contactView === 'phone' ? (
+                            <div className="contact-menu__details">
+                              <strong>{contactPhone}</strong>
+                              <span>Phone is shown only to signed-in users.</span>
+                              <a className="button button--secondary" href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`} target="_blank" rel="noreferrer">
+                                Call / text
+                              </a>
+                            </div>
+                          ) : (
+                            <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
+                              Email {contactEmail}
+                            </a>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
+                      Contact
+                    </a>
+                  )
+                ) : null}
                 <button className="button button--secondary" type="button" onClick={() => copyToClipboard(window.location.href, 'Link copied')}>
                   Share
                 </button>
@@ -1102,6 +1195,14 @@ function App() {
                 <div>
                   <dt>Gender preference</dt>
                   <dd>{currentListing.gender_preference}</dd>
+                </div>
+                <div>
+                  <dt>Contact email</dt>
+                  <dd>{contactEmail || 'Not available'}</dd>
+                </div>
+                <div>
+                  <dt>Contact phone</dt>
+                  <dd>{contactPhone || 'Optional / not provided'}</dd>
                 </div>
                 <div>
                   <dt>Roommates during lease</dt>
@@ -1151,9 +1252,52 @@ function App() {
             <h2>Listing notes</h2>
             <p>{currentListing.description}</p>
             <div className="detail-hero__actions">
-              <a className="button button--primary" href={getContactHref(currentListing)} target="_blank" rel="noreferrer">
-                Contact now
-              </a>
+              {contactEmailHref ? (
+                hasContactPhone && currentUser ? (
+                  <div className="contact-menu contact-menu--inline">
+                    <button className="button button--primary" type="button" onClick={() => setContactOpen((open) => !open)}>
+                      Contact now
+                    </button>
+                    {contactOpen ? (
+                      <div className="contact-menu__panel">
+                        <div className="contact-menu__switcher">
+                          <button
+                            className={`button ${contactView === 'email' ? 'button--primary' : 'button--ghost'}`}
+                            type="button"
+                            onClick={() => setContactView('email')}
+                          >
+                            Email
+                          </button>
+                          <button
+                            className={`button ${contactView === 'phone' ? 'button--primary' : 'button--ghost'}`}
+                            type="button"
+                            onClick={() => setContactView('phone')}
+                          >
+                            Phone
+                          </button>
+                        </div>
+                        {contactView === 'phone' ? (
+                          <div className="contact-menu__details">
+                            <strong>{contactPhone}</strong>
+                            <span>Phone is shown only to signed-in users.</span>
+                            <a className="button button--secondary" href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`} target="_blank" rel="noreferrer">
+                              Call / text
+                            </a>
+                          </div>
+                        ) : (
+                          <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
+                            Email {contactEmail}
+                          </a>
+                        )}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <a className="button button--primary" href={contactEmailHref} target="_blank" rel="noreferrer">
+                    Contact now
+                  </a>
+                )
+              ) : null}
               <button className="button button--secondary" type="button" onClick={() => navigate('submit')}>
                 Submit your own listing
               </button>
@@ -1305,16 +1449,12 @@ function App() {
                   <input name="neighborhood" type="text" placeholder="South University" />
                 </label>
                 <label>
-                  Contact type *
-                  <select name="contact_type" required>
-                    <option value="email">Email</option>
-                    <option value="phone">Phone</option>
-                    <option value="link">Link</option>
-                  </select>
+                  UMich email on file
+                  <input type="email" value={currentUser.email || ''} readOnly />
                 </label>
                 <label>
-                  Contact value *
-                  <input name="contact_value" type="text" required placeholder="name@example.com" />
+                  Phone number (optional)
+                  <input name="contact_phone" type="tel" placeholder="(734) 555-0123" />
                 </label>
                 <label>
                   Gender preference

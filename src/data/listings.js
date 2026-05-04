@@ -15,6 +15,7 @@ export const listings = [
       'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'northcampusstudio@umich.edu',
     contact: {
       type: 'link',
       value: 'mailto:northcampusstudio@example.com',
@@ -40,6 +41,7 @@ export const listings = [
       'https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'kerrytown2br@umich.edu',
     contact: {
       type: 'email',
       value: 'kerrytown2br@example.com',
@@ -64,6 +66,8 @@ export const listings = [
     images: [
       'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'centralcampus1br@umich.edu',
+    contact_phone: '+1 (734) 555-0182',
     contact: {
       type: 'phone',
       value: '+1 (734) 555-0182',
@@ -89,6 +93,7 @@ export const listings = [
       'https://images.unsplash.com/photo-1502005097973-6a7082348e28?auto=format&fit=crop&w=1400&q=80',
       'https://images.unsplash.com/photo-1560185008-b033106af5e4?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'westsidehouse@umich.edu',
     contact: {
       type: 'link',
       value: 'https://example.com/west-side-house',
@@ -113,6 +118,7 @@ export const listings = [
     images: [
       'https://images.unsplash.com/photo-1449247709967-d4461a6a6103?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'kingsley1br@umich.edu',
     contact: {
       type: 'email',
       value: 'kingsley1br@example.com',
@@ -137,6 +143,7 @@ export const listings = [
     images: [
       'https://images.unsplash.com/photo-1499955085172-a104c9463ece?auto=format&fit=crop&w=1400&q=80',
     ],
+    contact_email: 'medicalcenterstudio@umich.edu',
     contact: {
       type: 'link',
       value: 'mailto:medicalstudio@example.com',
