@@ -50,6 +50,11 @@ alter table public.listings add column if not exists shared_bathroom boolean not
 create index if not exists listings_status_created_at_idx on public.listings (status, created_at desc);
 create index if not exists listings_user_id_idx on public.listings (user_id);
 
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.listings to anon;
+grant select, insert, update, delete on public.listings to authenticated;
+grant select, insert, update, delete on public.listings to service_role;
+
 alter table public.listings enable row level security;
 
 drop policy if exists "Public can read published listings" on public.listings;
